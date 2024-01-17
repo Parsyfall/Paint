@@ -239,6 +239,7 @@
             this.btnPaintBucket.Size = new System.Drawing.Size(50, 50);
             this.btnPaintBucket.TabIndex = 0;
             this.btnPaintBucket.UseVisualStyleBackColor = false;
+            this.btnPaintBucket.Click += new System.EventHandler(this.btnPaintBucket_Click);
             // 
             // Canvas
             // 
