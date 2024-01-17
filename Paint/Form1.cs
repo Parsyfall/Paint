@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows.Forms;
@@ -8,15 +7,16 @@ namespace Paint
 {
     public partial class Form1 : Form
     {
-        //TODO: Implement fill color
+        //TODO: Implement fill color and load image
         Bitmap bm;
         Graphics g;
         bool paint = false;
-        Point topLeft, lastPoint;
+        Point px, py;
         Pen pencil = new Pen(Color.Black, 3f);
         Pen eraser = new Pen(Color.White, 10);
         int option;
-        int width, height;
+        // TODO: Convert ints to Points and adapt program
+        int x, y, sx, sy, cx, cy;
         Color newColor;
 
         public Form1()
@@ -48,13 +48,13 @@ namespace Paint
                 switch (option)
                 {
                     case 3:
-                        g.DrawEllipse(pencil, lastPoint.X, lastPoint.Y, width, height);
+                        g.DrawEllipse(pencil, cx, cy, sx, sy);
                         break;
                     case 4:
-                        g.DrawRectangle(pencil, lastPoint.X, lastPoint.Y, width, height);
+                        g.DrawRectangle(pencil, cx, cy, sx, sy);
                         break;
                     case 5:
-                        g.DrawLine(pencil, lastPoint.X, lastPoint.Y, topLeft.X, topLeft.Y);
+                        g.DrawLine(pencil, cx, cy, x, y);
                         break;
                 }
             }
@@ -73,7 +73,10 @@ namespace Paint
             }
 
             paint = true;
-            lastPoint = e.Location;
+            py = e.Location;
+
+            cx = e.X;
+            cy = e.Y;
         }
 
         private void Canvas_MouseMove(object sender, MouseEventArgs e)
@@ -83,44 +86,23 @@ namespace Paint
                 switch (option)
                 {
                     case 1:
-                        g.DrawLine(pencil, e.Location, lastPoint);
-                        lastPoint = e.Location;
+                        px = e.Location;
+                        g.DrawLine(pencil, px, py);
+                        py = px;
                         break;
                     case 2:
-                        g.DrawLine(eraser, e.Location, lastPoint);
-                        lastPoint = e.Location;
+                        px = e.Location;
+                        g.DrawLine(eraser, px, py);
+                        py = px;
                         break;
                 }
             }
             Canvas.Refresh();
 
-            topLeft = e.Location;
-            width = topLeft.X - lastPoint.X;
-            height = topLeft.Y - lastPoint.Y;
-        }
-        private void Canvas_MouseUp(object sender, MouseEventArgs e)
-        {
-            this.Cursor = Cursors.Default;
-            paint = false;
-
-            width = topLeft.X - lastPoint.X;
-            height = topLeft.Y - lastPoint.Y;
-
-            switch (option)
-            {
-                case 3:
-                    g.DrawEllipse(pencil, lastPoint.X, lastPoint.Y, width, height);
-                    break;
-                case 4:
-                    g.DrawRectangle(pencil, lastPoint.X, lastPoint.Y, width, height);
-                    break;
-                case 5:
-                    g.DrawLine(pencil, lastPoint.X, lastPoint.Y, topLeft.X, topLeft.Y);
-                    break;
-                case 6:
-                    FloodFill(bm, e.Location, bm.GetPixel(e.Location.X, e.Location.Y), activeColor.BackColor);
-                    break;
-            }
+            x = e.X;
+            y = e.Y;
+            sx = e.X - cx;
+            sy = e.Y - cy;
         }
 
         private void eraserColor_MouseClick(object sender, MouseEventArgs e)
@@ -131,6 +113,28 @@ namespace Paint
         private void activeColor_MouseClick(object sender, MouseEventArgs e)
         {
             changeColor(pencil, activeColor);
+        }
+
+        private void Canvas_MouseUp(object sender, MouseEventArgs e)
+        {
+            this.Cursor = Cursors.Default;
+            paint = false;
+
+            sx = x - cx;
+            sy = y - cy;
+
+            switch (option)
+            {
+                case 3:
+                    g.DrawEllipse(pencil, cx, cy, sx, sy);
+                    break;
+                case 4:
+                    g.DrawRectangle(pencil, cx, cy, sx, sy);
+                    break;
+                case 5:
+                    g.DrawLine(pencil, cx, cy, x, y);
+                    break;
+            }
         }
 
         private void Form1_SizeChanged(object sender, EventArgs e)
@@ -157,7 +161,7 @@ namespace Paint
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)
         {
             openFileDialog1.ShowDialog();
-            if (openFileDialog1.FileName != "")
+            if(openFileDialog1.FileName != "")
             {
                 bm = (Bitmap)Image.FromFile(openFileDialog1.FileName);
                 g = Graphics.FromImage(bm);
@@ -203,43 +207,12 @@ namespace Paint
             option = 5;
         }
 
-        private void btnPaintBucket_Click(object sender, EventArgs e)
-        {
-            option = 6;
-        }
-
         private void changeColor(Pen pen, Panel panel)
         {
             colorDialog.ShowDialog();
             newColor = colorDialog.Color;
             pen.Color = newColor;
             panel.BackColor = newColor;
-        }
-        private void FloodFill(Bitmap bmp, Point pt, Color targetColor, Color replacementColor)
-        {
-            Stack<Point> pixels = new Stack<Point>();
-            targetColor = bmp.GetPixel(pt.X, pt.Y);
-            pixels.Push(pt);
-
-            while (pixels.Count > 0)
-            {
-                Point a = pixels.Pop();
-                if (a.X < bmp.Width && a.X > 0 &&
-                        a.Y < bmp.Height && a.Y > 0)//make sure we stay within bounds
-                {
-
-                    if (bmp.GetPixel(a.X, a.Y) == targetColor)
-                    {
-                        bmp.SetPixel(a.X, a.Y, replacementColor);
-                        pixels.Push(new Point(a.X - 1, a.Y));
-                        pixels.Push(new Point(a.X + 1, a.Y));
-                        pixels.Push(new Point(a.X, a.Y - 1));
-                        pixels.Push(new Point(a.X, a.Y + 1));
-                    }
-                }
-            }
-            Canvas.Refresh(); //refresh our main picture box
-            return;
         }
     }
 }
